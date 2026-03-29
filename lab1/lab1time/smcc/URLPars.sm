@@ -1,0 +1,420 @@
+%class URLPars
+%fsmclass URLParsFSM
+%header URLPars.h
+%start Map::Start
+%map Map
+
+%%
+
+Start
+{   
+    curr_char(c: char)
+    [c == 'h']
+        ReadT1
+        {
+            clearBuffer();
+            addChar('h');
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadT1
+{
+    curr_char(c: char)
+    [c == 't']
+        ReadT2
+        {
+            addChar('t');
+        }
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadT2
+{
+    curr_char(c: char)
+    [c == 't']
+        ReadP
+        {
+            addChar('t');
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadP
+{
+    curr_char(c: char)
+    [c == 'p']
+        ReadS
+        {
+            addChar('p');
+        }
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadS
+{
+    curr_char(c: char)
+    [c == 's']
+        ReadPS
+        {
+            addChar('s');
+        }
+    curr_char(c: char)
+    [c == ':']
+        AfterProtocol
+        {
+            saveProtocol();
+            validProtocol();
+        }
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadPS
+{
+    curr_char(c: char)
+    [c == ':']
+        AfterProtocol
+        {
+            saveProtocol();
+            validProtocol();
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+AfterProtocol
+{
+    curr_char(c: char)
+    [c == '/']
+        ExpectSecondSlash
+        {}
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ExpectSecondSlash
+{
+    curr_char(c: char)
+    [c == '/']
+        ReadServer
+        {
+            clearBuffer();
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadServer
+{
+    curr_char(c: char)
+    [ctxt.isValidServerChar(c)]  // Убрал ctxt.
+        ReadServer
+        {
+            addChar(c);
+        }
+
+    curr_char(c: char)
+    [c == '.']
+        AfterServer
+        {
+            saveServer();
+            validServer();
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+AfterServer
+{
+    curr_char(c: char)
+    [ctxt.isValidZoneChar(c)]  // Убрал ctxt.
+        ReadZone
+        {
+            addChar(c);
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadZone
+{
+    curr_char(c: char)
+    [ctxt.isValidZoneChar(c)]  // Убрал ctxt.
+        ReadZone
+        {
+            addChar(c);
+        }
+
+    curr_char(c: char)
+    [c == '/']
+        AfterZone
+        {
+            saveZone();
+            validZone();
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+AfterZone
+{
+    curr_char(c: char)
+    [ctxt.isValidPageChar(c)]  // Убрал ctxt.
+        ReadPage
+        {
+            addChar(c);
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadPage
+{
+    curr_char(c: char)
+    [ctxt.isValidPageChar(c)]  // Убрал ctxt.
+        ReadPage
+        {
+            addChar(c);
+        }
+
+    curr_char(c: char)
+    [c == '.']
+        AfterPage
+        {
+            savePage();
+            validPage();
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+AfterPage
+{
+    curr_char(c: char)
+    [c == 'h']
+        ReadHtmlT
+        {
+            addChar('h');
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadHtmlT
+{
+    curr_char(c: char)
+    [c == 't']
+        ReadHtmlM
+        {
+            addChar('t');
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadHtmlM
+{
+    curr_char(c: char)
+    [c == 'm']
+        ReadHtmlL
+        {
+            addChar('m');
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadHtmlL
+{
+    curr_char(c: char)
+    [c == 'l']
+        ReadHtmlHTML
+        {
+            addChar('l');
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+ReadHtmlHTML
+{
+    eof()
+        Done
+        {
+            reset();
+        }
+
+    curr_char(c: char)
+        Exit_Fail
+        {}
+}
+
+Done
+{
+    curr_char(c: char)
+        Start
+        {
+            setSuccess(false);
+        }
+
+    eof()
+        Start
+        {
+            setSuccess(true);
+        }
+}
+
+Exit_Fail
+{
+    curr_char(c: char)
+        Start
+        {
+            setSuccess(false);
+        }
+
+    eof()
+        Start
+        {
+            setSuccess(false);
+        }
+}
+
+%%

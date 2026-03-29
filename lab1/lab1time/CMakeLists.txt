@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.10)
+project(URLPar)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG")
+
+add_executable(add
+main.cpp
+lexe/Flex_scan.cpp
+lexe/lex.yy.cc
+smcc/URLPars.cpp
+smcc/URLPars_sm.cpp
+)

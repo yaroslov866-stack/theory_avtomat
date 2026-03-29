@@ -1,0 +1,7 @@
+build/
+30000.txt
+lexe/lex.yy.cc
+smcc/Smc.jar
+smcc/statemap.h
+smcc/URLPars_sm.cpp
+smcc/URLPars_sm.h
