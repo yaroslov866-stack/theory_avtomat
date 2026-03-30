@@ -20,7 +20,7 @@ class Regex:public IUrl{
             std::string name_zone = "([a-zA-Z]{1,5})";
             std::string name_page = "([a-zA-Z0-9]{1,20})";
             std::string domen = "(html)";
-            std::string pat = "^"+protocol+"://"+name_server+"\\."+name_zone+"/"+name_page+"\\."+domen+"$";
+            std::string pat = "^\\s*"+protocol+"://"+name_server+"\\."+name_zone+"/"+name_page+"\\."+domen+"\\s*$";
             NameUrl = std::regex(pat,std::regex::icase);
             std::string serName = "^"+name_server+"$";
             NameServer = std::regex(serName);

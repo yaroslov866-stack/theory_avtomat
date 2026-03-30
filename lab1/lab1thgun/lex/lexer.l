@@ -10,8 +10,8 @@ std::string getPage(){return current_page_lexer;}
 
 %%
 <INITIAL>{
-    ^https?            {BEGIN(PROTOCOL);current_page_lexer.clear();}
-    [ \t]+             ; 
+    [ \t]+             {}
+    https?            {BEGIN(PROTOCOL);current_page_lexer.clear();} 
     \n                 return 0;        
     .                  return 0;
 }
@@ -46,13 +46,15 @@ std::string getPage(){return current_page_lexer;}
     \n                 BEGIN(INITIAL);
 }
 <FILE>{
-    \.html             { BEGIN(TAIL); return 1; }
+    \.html             { BEGIN(TAIL);}
     .                  BEGIN(INITIAL);
     \n                 BEGIN(INITIAL);
 }
 <TAIL>{
-    .                  ;              
-    \n                 BEGIN(INITIAL);
+    [ \t]+             { }
+    \n                 { BEGIN(INITIAL); return 1; } 
+    <<EOF>>            { BEGIN(INITIAL); return 1; } 
+    .                  { BEGIN(INITIAL); return 0; } 
 }
 <<EOF>> {
     return 0;   

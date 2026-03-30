@@ -11,7 +11,7 @@ bool Flex_scan::validUrl(const std::string& str) {
     
     int token = temp.yylex();
     
-    if (token == 1) {
+    if(token == 1){
         return true;
     }
     return false;
