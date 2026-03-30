@@ -1,0 +1,19 @@
+#pragma once 
+#include "AST.h"
+#include <string>
+#include "tokens.h"
+namespace myregex{
+class Parser{
+    public:
+        static ASTNode parse(const std::string& str);
+    private:
+        static std::vector<Token> tokenization(const std::string& str);
+        static ASTNode buildTree(const std::vector<Token>);
+        static bool canbeleft(const Token& token);
+        static bool canberight(const Token& token);
+        static int prioritet(const Token& token);
+
+        static int find_number(const std::string& str,size_t& i);
+};
+
+}
