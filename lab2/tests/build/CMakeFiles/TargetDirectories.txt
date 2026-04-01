@@ -1,0 +1,3 @@
+/home/knyazev/theory/lab2/tests/build/CMakeFiles/test_.dir
+/home/knyazev/theory/lab2/tests/build/CMakeFiles/edit_cache.dir
+/home/knyazev/theory/lab2/tests/build/CMakeFiles/rebuild_cache.dir

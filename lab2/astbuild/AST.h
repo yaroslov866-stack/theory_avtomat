@@ -28,8 +28,10 @@ struct ASTNode{
     ASTNode():type(Type::LITERAL),literal(0),range_min(0),range_max(-1),capt_num(0),nullable(false),position(0){}
     explicit ASTNode(char c):type(Type::LITERAL),literal(c),range_min(0),range_max(-1),capt_num(0),nullable(false),position(0){}
     explicit ASTNode(int slasn):type(Type::SLASHN),literal(0),range_min(0),range_max(-1),capt_num(slasn),nullable(false),position(0){}
+    
+    void countNullable(ASTNode& node);
 
-    static ASTNode literal(char c){
+    static ASTNode literal_(char c){
         return ASTNode(c);
     }
     static ASTNode epsilon(){

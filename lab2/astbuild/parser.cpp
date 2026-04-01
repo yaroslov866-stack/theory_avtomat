@@ -1,9 +1,23 @@
 #include "parser.h"
+#include <iostream>
+#include <stack>
 namespace myregex{
 ASTNode Parser::parse(const std::string& str){
     std::vector<Token> tokens = tokenization(str);
+    
     ASTNode node = buildTree(tokens);
 }
+
+int Parser::find_number(const std::string& str,size_t& i){
+    if(str.empty())throw;
+    int num = 0;
+    while(i<str.length() && std::isdigit(str[i])){
+        num += num*10 + (str[i]- '0');
+        i++;
+    }
+    return num;
+}
+
 
 bool Parser::canbeleft(const Token& token){
     switch(token.type){
@@ -145,5 +159,127 @@ std::vector<Token> Parser::tokenization(const std::string& str){
     }
     return res;
 }
+
+std::vector<Token> Parser::insert_conc(const std::vector<Token>& tokens){
+    std::vector<Token> result;
+    for(size_t i=0;i<tokens.size()-1;i++){
+        result.push_back(tokens[i]);
+        if(canbeleft(tokens[i]) && canberight(tokens[i+1])){
+            Token token;
+            token.type = Token::Type::OP_CONC;
+            result.push_back(token);
+        }
+    }
+    return result;
+}
+
+ASTNode Parser::buildTree(const std::vector<Token>& tok){
+    std::vector<Token> tokens = tok;
+    std::stack<ASTNode> leaf_st;
+    std::stack<Token> oper_st;
+    size_t prior = 0;
+    for(auto& token:tokens){
+        if(token.type == Token::Type::LITERAL){
+            leaf_st.push(ASTNode::literal_(token.literal));
+        }
+        else if(token.type == Token::Type::EPSILON){
+            leaf_st.push(ASTNode::epsilon());
+        }
+        else if(token.type == Token::Type::OP_SLASHN){
+            leaf_st.push(ASTNode::slashn(token.number));
+        }
+        else if(token.type == Token::Type::OP_PLUS){
+            ASTNode child = leaf_st.top();
+            leaf_st.pop();
+            leaf_st.push(ASTNode::plus(child));
+        }
+        else if(token.type == Token::Type::OP_RANGE_START){
+            ASTNode child = leaf_st.top();
+            leaf_st.pop();
+            leaf_st.push(ASTNode::range(child,token.range_min,token.range_max));
+        }
+        else if(token.type == Token::Type::LEFT_PAR ||token.type == Token::Type::CAPTURE_START){
+            oper_st.push(token);
+        }
+        else if(token.type == Token::Type::RIGHT_PAR){
+            while (!oper_st.empty() && oper_st.top().type != Token::Type::LEFT_PAR &&oper_st.top().type != Token::Type::CAPTURE_START) {
+                Token op = oper_st.top();
+                oper_st.pop();
+                if(op.type ==Token::Type::OP_OR){
+                    ASTNode right = leaf_st.top();
+                    leaf_st.pop();
+                    ASTNode left = leaf_st.top();
+                    leaf_st.pop();
+                    leaf_st.push(ASTNode::or_(left,right));
+                }
+                else if(op.type ==Token::Type::OP_CONC){
+                    ASTNode right = leaf_st.top();
+                    leaf_st.pop();
+                    ASTNode left = leaf_st.top();
+                    leaf_st.pop();
+                    leaf_st.push(ASTNode::concat(left,right));
+                }
+                
+            }
+            if(!oper_st.empty() && oper_st.top().type == Token::Type::CAPTURE_START){
+                Token capture = oper_st.top(); 
+                oper_st.pop();
+                ASTNode child = leaf_st.top(); 
+                leaf_st.pop();
+                leaf_st.push(ASTNode::capture_group(child, capture.number));
+            }
+            if(!oper_st.empty() && oper_st.top().type == Token::Type::LEFT_PAR){
+                oper_st.pop();
+            }
+        }
+        else if(token.type == Token::Type::OP_OR ||token.type == Token::Type::OP_CONC) {
+            while (!oper_st.empty() && oper_st.top().type != Token::Type::LEFT_PAR &&oper_st.top().type != Token::Type::CAPTURE_START &&
+                   prioritet(oper_st.top()) >= prioritet(token)) {
+                Token op = oper_st.top();
+                oper_st.pop();
+                if(op.type ==Token::Type::OP_OR){
+                    ASTNode right = leaf_st.top();
+                    leaf_st.pop();
+                    ASTNode left = leaf_st.top();
+                    leaf_st.pop();
+                    leaf_st.push(ASTNode::or_(left,right));
+                }
+                else if(op.type ==Token::Type::OP_CONC){
+                    ASTNode right = leaf_st.top();
+                    leaf_st.pop();
+                    ASTNode left = leaf_st.top();
+                    leaf_st.pop();
+                    leaf_st.push(ASTNode::concat(left,right));
+                }
+            }
+            oper_st.push(token);
+        }
+        
+    }
+    while(!oper_st.empty()){
+        Token tok = oper_st.top();
+        oper_st.pop();
+        if(tok.type ==Token::Type::OP_OR){
+            ASTNode right = leaf_st.top();
+            leaf_st.pop();
+            ASTNode left = leaf_st.top();
+            leaf_st.pop();
+            leaf_st.push(ASTNode::or_(left,right));
+        }
+        else if(tok.type ==Token::Type::OP_CONC){
+            ASTNode right = leaf_st.top();
+            leaf_st.pop();
+            ASTNode left = leaf_st.top();
+            leaf_st.pop();
+            leaf_st.push(ASTNode::concat(left,right));
+        }
+    }
+    if(leaf_st.size() !=1){
+        throw;
+    }
+    return leaf_st.top();
+}
+
+
 
 }
