@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/test_.dir/test.cpp.o -o test_  /usr/lib/libCatch2Main.a /usr/lib/libCatch2.a 
