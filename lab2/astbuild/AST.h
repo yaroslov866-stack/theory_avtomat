@@ -29,7 +29,11 @@ struct ASTNode{
     explicit ASTNode(char c):type(Type::LITERAL),literal(c),range_min(0),range_max(-1),capt_num(0),nullable(false),position(0){}
     explicit ASTNode(int slasn):type(Type::SLASHN),literal(0),range_min(0),range_max(-1),capt_num(slasn),nullable(false),position(0){}
     
-    void countNullable(ASTNode& node);
+    static void countNullable(ASTNode& node);
+    static void countFirstposLastPos(ASTNode& node);
+    static void numeration(ASTNode& node,int& count);
+    static ASTNode addMark(ASTNode& root);
+    static std::set<int> unityset(const std::set<int>& first,const std::set<int>& second);
 
     static ASTNode literal_(char c){
         return ASTNode(c);
