@@ -6,7 +6,7 @@ namespace myregex{
 class Parser{
     public:
         static ASTNode parse(const std::string& str);
-    private:
+    // private:
         static std::vector<Token> tokenization(const std::string& str);
         static bool canbeleft(const Token& token);
         static bool canberight(const Token& token);

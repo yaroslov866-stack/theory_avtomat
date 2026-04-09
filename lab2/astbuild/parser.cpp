@@ -4,15 +4,17 @@
 namespace myregex{
 ASTNode Parser::parse(const std::string& str){
     std::vector<Token> tokens = tokenization(str);
-    
-    ASTNode node = buildTree(tokens);
+    std::vector<Token> tokens_conc = insert_conc(tokens);
+    ASTNode node = buildTree(tokens_conc);
+    return node;
 }
 
 int Parser::find_number(const std::string& str,size_t& i){
     if(str.empty())throw;
     int num = 0;
+    i++;
     while(i<str.length() && std::isdigit(str[i])){
-        num += num*10 + (str[i]- '0');
+        num = num*10 + (str[i]- '0');
         i++;
     }
     return num;
@@ -170,6 +172,7 @@ std::vector<Token> Parser::insert_conc(const std::vector<Token>& tokens){
             result.push_back(token);
         }
     }
+    result.push_back(tokens[tokens.size()-1]);
     return result;
 }
 

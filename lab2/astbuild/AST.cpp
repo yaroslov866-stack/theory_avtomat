@@ -65,7 +65,7 @@ void ASTNode::countFirstposLastPos(ASTNode& node){
     else if(node.type == ASTNode::Type::PLUS){
         node.firstpos = node.children[0].firstpos; 
     }
-    else if (node.type == ASTNode::Type::RANGE) {
+    else if(node.type == ASTNode::Type::RANGE){
         node.firstpos = node.children[0].firstpos;
     }
     else if (node.type == ASTNode::Type::CAPTURE_GROUP) {
@@ -91,10 +91,10 @@ void ASTNode::countFirstposLastPos(ASTNode& node){
         }
     }
     else if(node.type == ASTNode::Type::PLUS){
-        node.lastpos = node.children[1].lastpos; 
+        node.lastpos = node.children[0].lastpos; 
     }
     else if (node.type == ASTNode::Type::RANGE) {
-        node.lastpos = node.children[1].lastpos;
+        node.lastpos = node.children[0].lastpos;
     }
     else if (node.type == ASTNode::Type::CAPTURE_GROUP) {
         node.lastpos = node.children[1].lastpos;

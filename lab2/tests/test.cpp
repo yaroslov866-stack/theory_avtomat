@@ -2,6 +2,7 @@
 #include <catch2/catch_all.hpp>
 #include "../astbuild/parser.h"
 #include "../astbuild/tokens.h"
+#include "../dfa/dfa.h"
 #include <iostream>
 using namespace myregex;
 TEST_CASE("AST"){
@@ -158,3 +159,184 @@ TEST_CASE("AST"){
 
     }
 }
+TEST_CASE("Parser"){
+    SECTION("TOKEN"){
+        std::string str = "a(b|c)+";
+        std::vector<Token> tokenss = Parser::tokenization(str);
+        std::vector<Token> tokens = Parser::insert_conc(tokenss);
+        ASTNode node = Parser::parse(str);
+        REQUIRE(node.children[0].type == ASTNode::Type::LITERAL);
+        REQUIRE(node.children[1].type == ASTNode::Type::PLUS);
+        REQUIRE(node.children[1].children[0].type == ASTNode::Type::OR);
+        REQUIRE(node.children[1].children[0].children[0].type == ASTNode::Type::LITERAL);
+        REQUIRE(node.children[1].children[0].children[1].type == ASTNode::Type::LITERAL);
+        REQUIRE(node.children[1].children[0].children[0].children.empty());
+        REQUIRE(node.children[1].children[0].children[0].children.empty());
+        REQUIRE(node.children[0].children.empty());
+
+        
+    }
+}
+
+
+
+
+// str = "a(b|c)+v{1,5}";
+//         tokenss = Parser::tokenization(str);
+//         tokens = Parser::insert_conc(tokenss);
+//         for(auto token:tokens){
+//             std::string type;
+//             switch(token.type){
+//                 case Token::Type::LITERAL:
+//                     type = "LITERAL(" + std::string(1,token.literal) + ")";
+//                     break;
+//                 case Token::Type::LEFT_PAR:
+//                     type = "LEFT_PAR";
+//                     break;
+//                 case Token::Type::RIGHT_PAR:
+//                     type = "RIGHT_PAR";
+//                     break;
+//                 case Token::Type::OP_OR:
+//                     type = "OP_OR";
+//                     break;
+//                 case Token::Type::OP_PLUS:
+//                     type =  "OP_PLUS";
+//                     break;
+//                 case Token::Type::OP_CONC:
+//                     type = "OP_CONC";
+//                     break;
+//                 case Token::Type::OP_RANGE_START:
+//                     if (token.range_max == -1) {
+//                         type = "OP_RANGE_START(" + std::to_string(token.range_min) + ",)";
+//                     } else {
+//                         type = "OP_RANGE_START(" + std::to_string(token.range_min) + "," + 
+//                             std::to_string(token.range_max) + ")";
+//                     }
+//             }
+//             std::cout<<type<<" ";
+//         }
+//         std::cout<<std::endl;
+//         node = Parser::parse(str);
+
+
+TEST_CASE("DFA"){
+    SECTION("FOLLOWSPOS"){
+        std::string str = "a(b|c)+v";
+        ASTNode node = Parser::parse(str);
+        ASTNode root = ASTNode::addMark(node);
+        int num = 1;
+        ASTNode::numeration(root,num);
+        ASTNode::countNullable(root);
+        ASTNode::countFirstposLastPos(root);
+        REQUIRE(root.type == ASTNode::Type::CONCAT);
+        std::vector<std::set<int>> followpos(num);
+        DFA::computeFollowpos(root,followpos);
+        REQUIRE(followpos[1].count(2) == true);
+        REQUIRE(followpos[1].count(3) == true);
+        REQUIRE(followpos[1].count(1) == false);
+        REQUIRE(followpos[1].count(4) == false);
+        REQUIRE(followpos[2].count(3) == true);
+        REQUIRE(followpos[2].count(2) == true);
+        REQUIRE(followpos[2].count(4) == true);
+        REQUIRE(followpos[3].count(4) == true);
+        REQUIRE(followpos[4].count(5) == true);
+        REQUIRE(followpos[4].count(4) == false);
+        REQUIRE(followpos[5].empty() == true);
+        REQUIRE(DFA::findMarkerPos(root) == 5);
+        std::map<int,char> posToChar;
+        std::set<char> alphabet;
+        DFA::collectSym(root,posToChar,alphabet);
+        REQUIRE(alphabet.count('a') == true);
+        REQUIRE(alphabet.count('b') == true);
+        REQUIRE(alphabet.count('c') == true);
+        REQUIRE(alphabet.count('v') == true);
+        REQUIRE(alphabet.count('#') == true);
+        REQUIRE(alphabet.count('s') == false);
+        REQUIRE(alphabet.count('A') == false);
+        REQUIRE(posToChar[1] == 'a');
+        REQUIRE(posToChar[2] == 'b');
+        REQUIRE(posToChar[3] == 'c');
+        REQUIRE(posToChar[4] == 'v');
+        REQUIRE(posToChar[5] == '#');
+        REQUIRE(posToChar.size() == 5);
+        DFA dfa = DFA::compile("a(b|c)+v");
+        REQUIRE(dfa.accepts("abcv") == true);
+        REQUIRE(dfa.accepts("abc") == false);
+        REQUIRE(dfa.accepts("accv") == true);
+        REQUIRE(dfa.accepts("abcccccccv") == true);
+        REQUIRE(dfa.accepts("abcccc") == false);
+        REQUIRE(dfa.accepts("bcv") == false);
+        REQUIRE(dfa.accepts("abv") == true);
+        REQUIRE(dfa.accepts("abcv#") == false);
+
+        str = "a(b|c)+v{1,5}";
+        node = Parser::parse(str);
+        root = ASTNode::addMark(node);
+        num = 1;
+        ASTNode::numeration(root,num);
+        ASTNode::countNullable(root);
+        ASTNode::countFirstposLastPos(root);
+        REQUIRE(root.type == ASTNode::Type::CONCAT);
+        std::vector<std::set<int>> followpos1(num);
+        DFA::computeFollowpos(root,followpos1);
+        REQUIRE(followpos1[1].count(2) == true);
+        REQUIRE(followpos1[1].count(3) == true);
+        REQUIRE(followpos1[1].count(1) == false);
+        REQUIRE(followpos1[1].count(4) == false);
+        REQUIRE(followpos1[2].count(3) == true);
+        REQUIRE(followpos1[2].count(2) == true);
+        REQUIRE(followpos1[2].count(4) == true);
+        REQUIRE(followpos1[3].count(4) == true);
+        REQUIRE(followpos1[4].count(5) == true);
+        REQUIRE(followpos1[4].count(4) == true);
+        REQUIRE(DFA::findMarkerPos(root) == 5);
+        REQUIRE(followpos1[5].empty() == true);
+        posToChar.clear();
+        alphabet.clear();
+        DFA::collectSym(root,posToChar,alphabet);
+        REQUIRE(alphabet.count('a') == true);
+        REQUIRE(alphabet.count('b') == true);
+        REQUIRE(alphabet.count('c') == true);
+        REQUIRE(alphabet.count('v') == true);
+        REQUIRE(alphabet.count('#') == true);
+        REQUIRE(alphabet.count('s') == false);
+        REQUIRE(alphabet.count('A') == false);
+        REQUIRE(posToChar[1] == 'a');
+        REQUIRE(posToChar[2] == 'b');
+        REQUIRE(posToChar[3] == 'c');
+        REQUIRE(posToChar[4] == 'v');
+        REQUIRE(posToChar[5] == '#');
+        REQUIRE(posToChar.size() == 5);
+        dfa = DFA::compile("a(b|c)+v{1,5}");
+        REQUIRE(dfa.accepts("abcv") == true);
+        REQUIRE(dfa.accepts("abc") == false);
+        REQUIRE(dfa.accepts("accv") == true);
+        REQUIRE(dfa.accepts("abcccccccv") == true);
+        REQUIRE(dfa.accepts("abcccc") == false);
+        REQUIRE(dfa.accepts("bcv") == false);
+        REQUIRE(dfa.accepts("abv") == true);
+        REQUIRE(dfa.accepts("abcv#") == false);
+        REQUIRE(dfa.accepts("abcvvvvv") == true);
+        REQUIRE(dfa.accepts("abcvvvvvvvvvv") == false);
+        REQUIRE(dfa.accepts("abc") == false);
+
+
+    }
+}
+
+/*
+DFA dfa = DFA::compile("a(b|c)+");
+        REQUIRE(dfa.accepts("abc") == false);
+        REQUIRE(dfa.accepts("acc") == true);
+        REQUIRE(dfa.accepts("b") == false);
+        REQUIRE(dfa.accepts("aab") == false);
+        REQUIRE(dfa.accepts("ac") == true);
+        REQUIRE(dfa.accepts("Ab") == false);
+        REQUIRE(dfa.accepts("c") == false);
+        REQUIRE(dfa.accepts("a#") == false);
+        REQUIRE(dfa.accepts("abbb") == true);
+        REQUIRE(dfa.accepts("abb") == true);
+        REQUIRE(dfa.accepts("a") == false);
+        DFA dfa1 = DFA::compile("a*(b|c)d*e");
+        REQUIRE(dfa1.accepts("abde") == true);
+        */
