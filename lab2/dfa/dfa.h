@@ -4,8 +4,6 @@
 #include <map>
 #include "../astbuild/AST.h"
 #include "../astbuild/parser.h"
-namespace myregex{
-
 class DFA{
     public:
         struct State{
@@ -32,7 +30,6 @@ class DFA{
 
         static DFA compile(const std::string& str);
         static DFA fromAST(ASTNode& root);
-
         std::string toRegex()const;
 
         DFA commplement() const;
@@ -49,6 +46,9 @@ class DFA{
         static DFA constructDFA(const ASTNode& root,const std::vector<std::set<int>>& followpos,int numPositions);
         static void collectSym(const ASTNode& root,std::map<int,char>& posToChar,std::set<char>& alphabet);
 
-};
 
-}
+
+
+        std::string toDot() const;
+        static void saveToDot(const DFA& dfa, const std::string& filename);
+};

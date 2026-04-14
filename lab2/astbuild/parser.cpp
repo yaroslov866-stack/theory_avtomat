@@ -1,7 +1,6 @@
 #include "parser.h"
 #include <iostream>
 #include <stack>
-namespace myregex{
 ASTNode Parser::parse(const std::string& str){
     std::vector<Token> tokens = tokenization(str);
     std::vector<Token> tokens_conc = insert_conc(tokens);
@@ -26,7 +25,6 @@ bool Parser::canbeleft(const Token& token){
         case Token::Type::LITERAL:
         case Token::Type::RIGHT_PAR:
         case Token::Type::OP_RANGE_START:
-        case Token::Type::OP_SLASHN:
         case Token::Type::OP_PLUS:
         case Token::Type::EPSILON:
             return true;
@@ -39,7 +37,6 @@ bool Parser::canberight(const Token& token){
     switch(token.type){
         case Token::Type::LITERAL:
         case Token::Type::LEFT_PAR:
-        case Token::Type::OP_SLASHN:
         case Token::Type::EPSILON:
         case Token::Type::CAPTURE_START:
             return true;
@@ -120,7 +117,7 @@ std::vector<Token> Parser::tokenization(const std::string& str){
             else{
                 int max = find_number(str,i);
                 tok.range_max = max;
-                i++;
+                //i++;
             }
             tok.range_min = min;
             res.push_back(tok);
@@ -133,19 +130,6 @@ std::vector<Token> Parser::tokenization(const std::string& str){
             tok.literal = c;
             res.push_back(tok);
             continue; 
-        }
-        else if(c == '\\'){
-            if(i< str.length() && std::isdigit(str[i+1])){
-                int num = find_number(str,i);
-                tok.type = Token::Type::OP_SLASHN;
-                tok.number = num;
-                res.push_back(tok);
-                continue;
-            }
-            tok.literal = c;
-            tok.type = Token::Type::LITERAL;
-            res.push_back(tok);
-            continue;
         }
         else if(c == '^'){
             tok.type = Token::Type::EPSILON;
@@ -187,9 +171,6 @@ ASTNode Parser::buildTree(const std::vector<Token>& tok){
         }
         else if(token.type == Token::Type::EPSILON){
             leaf_st.push(ASTNode::epsilon());
-        }
-        else if(token.type == Token::Type::OP_SLASHN){
-            leaf_st.push(ASTNode::slashn(token.number));
         }
         else if(token.type == Token::Type::OP_PLUS){
             ASTNode child = leaf_st.top();
@@ -285,4 +266,3 @@ ASTNode Parser::buildTree(const std::vector<Token>& tok){
 
 
 
-}

@@ -1,7 +1,6 @@
 #include "AST.h"
 
 
-namespace myregex{
 void ASTNode::countNullable(ASTNode& node){
     for(auto& child:node.children){
         countNullable(child);
@@ -23,9 +22,6 @@ void ASTNode::countNullable(ASTNode& node){
     }
     else if(node.type == ASTNode::Type::PLUS){
         if(!node.children.empty())node.nullable = node.children[0].nullable;
-    }
-    else if(node.type == ASTNode::Type::SLASHN){
-        node.nullable = false;
     }
     else if(node.type == ASTNode::Type::RANGE){
         if(node.range_min == 0){
@@ -110,7 +106,7 @@ std::set<int> ASTNode::unityset(const std::set<int>& first,const std::set<int>& 
 }
 
 void ASTNode::numeration(ASTNode& node,int& count){
-    if(node.type == ASTNode::Type::LITERAL || node.type == ASTNode::Type::SLASHN || node.type == ASTNode::Type::EPSILON){
+    if(node.type == ASTNode::Type::LITERAL || node.type == ASTNode::Type::EPSILON){
         node.position = count++;
     }
     for(auto& child:node.children){
@@ -120,7 +116,4 @@ void ASTNode::numeration(ASTNode& node,int& count){
 ASTNode ASTNode::addMark(ASTNode& root){
     ASTNode first = ASTNode::literal_('#');
     return ASTNode::concat(root,first);
-}
-
-
 }

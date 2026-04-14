@@ -1,6 +1,8 @@
 #include "dfa.h"
 #include <queue>
-namespace myregex{
+#include <iostream>
+#include <fstream>
+
 
 void DFA::computeFollowpos(const ASTNode& node,std::vector<std::set<int>>& followpos){
     switch(node.type){
@@ -39,10 +41,6 @@ void DFA::collectSym(const ASTNode& root,std::map<int,char>& posToChar,std::set<
     if(root.type == ASTNode::Type::LITERAL){
         posToChar[root.position] = root.literal;
         alphabet.insert(root.literal);
-    }
-    else if(root.type == ASTNode::Type::SLASHN){
-        posToChar[root.position] = '\\';
-        alphabet.insert('\\');
     }
     for(const auto& child:root.children){
         collectSym(child,posToChar,alphabet);
@@ -162,6 +160,7 @@ DFA DFA::constructDFA(const ASTNode& root,const std::vector<std::set<int>>& foll
 
 
 
+
 DFA DFA::compile(const std::string& str){
     ASTNode ast = Parser::parse(str);
     return fromAST(ast);
@@ -182,4 +181,36 @@ DFA DFA::fromAST(ASTNode& root){
 }
 
 
+
+
+
+std::string DFA::toDot() const {
+    std::string result = "digraph DFA {\n";
+    result += "    rankdir=LR;\n";
+    result += "    node [shape=circle];\n";
+    result += "    start [shape=point];\n";
+    result += "    start -> " + std::to_string(start_state) + ";\n";
+    for (size_t i = 0; i < states_.size(); ++i) {
+        if (states_[i].is_accept) {
+            result += "    " + std::to_string(i) + " [shape=doublecircle];\n";
+        } else {
+            result += "    " + std::to_string(i) + " [shape=circle];\n";
+        }
+    }
+    for (size_t from = 0; from < states_.size(); ++from) {
+        for (const auto& [symbol, to] : states_[from].transitions) {
+            result += "    " + std::to_string(from) + " -> " + std::to_string(to);
+            result += " [label=\"" + std::string(1, symbol) + "\"];\n";
+        }
+    }
+    result += "}\n";
+    return result;
 }
+
+
+void DFA::saveToDot(const DFA& dfa, const std::string& filename) {
+    std::ofstream file(filename);
+    file << dfa.toDot();
+    file.close();
+}
+

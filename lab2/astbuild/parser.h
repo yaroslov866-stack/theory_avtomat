@@ -2,7 +2,7 @@
 #include "AST.h"
 #include <string>
 #include "tokens.h"
-namespace myregex{
+
 class Parser{
     public:
         static ASTNode parse(const std::string& str);
@@ -15,6 +15,6 @@ class Parser{
         static int find_number(const std::string& str,size_t& i);
         static std::vector<Token> insert_conc(const std::vector<Token>& tokens);
         static ASTNode buildTree(const std::vector<Token>& tokens);
+        
 };
 
-}

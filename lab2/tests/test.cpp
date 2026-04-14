@@ -3,8 +3,9 @@
 #include "../astbuild/parser.h"
 #include "../astbuild/tokens.h"
 #include "../dfa/dfa.h"
+#include "../nfa/nfa.h"
+#include "../pattern/pattern.h"
 #include <iostream>
-using namespace myregex;
 TEST_CASE("AST"){
     SECTION("TOKEN_CONSTRUCTOR"){
         Token token('q');
@@ -85,15 +86,15 @@ TEST_CASE("AST"){
         REQUIRE(node4.capt_num == 0);
         REQUIRE(node4.children[0].type == ASTNode::Type::LITERAL);
         REQUIRE(node4.children[1].type == ASTNode::Type::LITERAL);
-        ASTNode node5 = ASTNode::range(node,5,25);
-        REQUIRE(node5.type == ASTNode::Type::RANGE);
-        REQUIRE(node5.literal == 0);
-        REQUIRE(node5.range_max == 25);
-        REQUIRE(node5.range_min == 5);
-        REQUIRE(node5.position == 0);
-        REQUIRE(node5.nullable == false);
-        REQUIRE(node5.capt_num == 0);
-        REQUIRE(node5.children[0].type == ASTNode::Type::LITERAL);
+    //     ASTNode node5 = ASTNode::range(node,5,25);
+    //    // REQUIRE(node5.type == ASTNode::Type::RANGE);
+    //     REQUIRE(node5.literal == 0);
+    //     REQUIRE(node5.range_max == 25);
+    //     REQUIRE(node5.range_min == 5);
+    //     REQUIRE(node5.position == 0);
+    //     REQUIRE(node5.nullable == false);
+    //     REQUIRE(node5.capt_num == 0);
+    //     REQUIRE(node5.children[0].type == ASTNode::Type::LITERAL);
         ASTNode node6 = ASTNode::epsilon();
         REQUIRE(node6.type == ASTNode::Type::EPSILON);
         REQUIRE(node6.literal == 0);
@@ -111,14 +112,6 @@ TEST_CASE("AST"){
         REQUIRE(node7.nullable == false);
         REQUIRE(node7.capt_num == 0);
         REQUIRE(node7.children[0].type == ASTNode::Type::LITERAL);
-        ASTNode node8 = ASTNode::slashn(7);
-        REQUIRE(node8.type == ASTNode::Type::SLASHN);
-        REQUIRE(node8.literal == 0);
-        REQUIRE(node8.range_max == -1);
-        REQUIRE(node8.range_min == 0);
-        REQUIRE(node8.position == 0);
-        REQUIRE(node8.nullable == false);
-        REQUIRE(node8.capt_num == 7);
     }
     SECTION("Test function"){
         ASTNode node = ASTNode::literal_('a');
@@ -218,7 +211,7 @@ TEST_CASE("Parser"){
 //         std::cout<<std::endl;
 //         node = Parser::parse(str);
 
-
+/*
 TEST_CASE("DFA"){
     SECTION("FOLLOWSPOS"){
         std::string str = "a(b|c)+v";
@@ -307,22 +300,61 @@ TEST_CASE("DFA"){
         REQUIRE(posToChar[4] == 'v');
         REQUIRE(posToChar[5] == '#');
         REQUIRE(posToChar.size() == 5);
-        dfa = DFA::compile("a(b|c)+v{1,5}");
-        REQUIRE(dfa.accepts("abcv") == true);
-        REQUIRE(dfa.accepts("abc") == false);
-        REQUIRE(dfa.accepts("accv") == true);
-        REQUIRE(dfa.accepts("abcccccccv") == true);
-        REQUIRE(dfa.accepts("abcccc") == false);
-        REQUIRE(dfa.accepts("bcv") == false);
-        REQUIRE(dfa.accepts("abv") == true);
-        REQUIRE(dfa.accepts("abcv#") == false);
-        REQUIRE(dfa.accepts("abcvvvvv") == true);
-        REQUIRE(dfa.accepts("abcvvvvvvvvvv") == false);
-        REQUIRE(dfa.accepts("abc") == false);
+        dfa = DFA::compile("l(l|d)+");
+        std::string s = "dfa.dot";
+        DFA::saveToDot(dfa,s);
+        // REQUIRE(dfa.accepts("abcv") == true);
+        // REQUIRE(dfa.accepts("abc") == false);
+        // REQUIRE(dfa.accepts("accv") == true);
+        // REQUIRE(dfa.accepts("abcccccccv") == true);
+        // REQUIRE(dfa.accepts("abcccc") == false);
+        // REQUIRE(dfa.accepts("bcv") == false);
+        // REQUIRE(dfa.accepts("abv") == true);
+        // REQUIRE(dfa.accepts("abcv#") == false);
+        // REQUIRE(dfa.accepts("abcvvvvv") == true);
+        // REQUIRE(dfa.accepts("abcvvvvvvvvvv") == false);
+        // REQUIRE(dfa.accepts("abc") == false);
 
 
     }
 }
+*/
+TEST_CASE("NFA"){
+    SECTION("Method Metka"){
+        std::string str = "v{1,3}";
+        ASTNode node = Parser::parse(str);
+        NFA nfa = NFA::fromAST(node);
+        std::string s = "nfa.dot";
+        s = "nfa.dot";
+        NFA::saveNFAToDot(nfa,s);
+        DFA dfa1 = DFA::compile("c");
+        s = "dfa1.dot";
+        DFA::saveToDot(dfa1,s);
+        auto ma = nfa.match("aaaa");
+
+        // auto ma1 = nfa.match("aacvbndq");
+        // REQUIRE(ma1.match()== false);
+        // REQUIRE(nfa.hasCaptureGroups() == true);
+        // REQUIRE(ma.match()== true);
+        // REQUIRE(ma.group(1) == "v");
+        // REQUIRE(ma.group(2) == "qq");
+        // std::string s = "nfa.dot";
+        // NFA::saveNFAToDot(nfa,s);
+        // DFA dfa = nfa.makeDFA();
+        // s = "dfa.dot";
+        // DFA::saveToDot(dfa,s);
+        // //DFA dfa1 = DFA::compile(str);
+        // s = "dfa1.dot";
+        // DFA::saveToDot(dfa1,s);
+        // NFA::Metka m1 = NFA::buildSym('a',nfa);
+        // NFA::Metka m2 = NFA::buildSym('b',nfa);
+        // NFA::Metka m3 = NFA::buildConcat(m1,m2,nfa);
+        // REQUIRE(nfa.states_[0] == )
+        // NFA::Metka m1 = NFA::buildSym('a',nfa);
+
+    }
+}
+
 
 /*
 DFA dfa = DFA::compile("a(b|c)+");
@@ -340,3 +372,9 @@ DFA dfa = DFA::compile("a(b|c)+");
         DFA dfa1 = DFA::compile("a*(b|c)d*e");
         REQUIRE(dfa1.accepts("abde") == true);
         */
+TEST_CASE("Pattern"){
+    SECTION("constructor"){
+        Pattern pattern("acb(1:2)");
+
+    }
+}

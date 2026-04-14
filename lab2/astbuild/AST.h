@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include <set>
-namespace myregex{
 struct ASTNode{
     enum class Type{
         LITERAL,
@@ -10,8 +9,7 @@ struct ASTNode{
         OR,
         PLUS,
         RANGE,
-        CAPTURE_GROUP,
-        SLASHN
+        CAPTURE_GROUP
     };
     Type type;
     char literal;
@@ -27,7 +25,6 @@ struct ASTNode{
 
     ASTNode():type(Type::LITERAL),literal(0),range_min(0),range_max(-1),capt_num(0),nullable(false),position(0){}
     explicit ASTNode(char c):type(Type::LITERAL),literal(c),range_min(0),range_max(-1),capt_num(0),nullable(false),position(0){}
-    explicit ASTNode(int slasn):type(Type::SLASHN),literal(0),range_min(0),range_max(-1),capt_num(slasn),nullable(false),position(0){}
     
     static void countNullable(ASTNode& node);
     static void countFirstposLastPos(ASTNode& node);
@@ -68,12 +65,31 @@ struct ASTNode{
     }
 
     static ASTNode range(const ASTNode& child,int min,int max){
-        ASTNode node;
-        node.type = Type::RANGE;
-        node.range_min= min;
-        node.range_max = max;
-        node.children.push_back(child);
-        return node;
+       if(max == -1){
+            ASTNode result = child;
+            for(int i = 1;i<min;++i){
+                result = concat(result,child);
+            }
+            ASTNode star = or_(epsilon(), plus(child));
+            return concat(result,star);
+        }
+        if(min == max){
+            ASTNode result = child;
+            for(int i = 1;i<min;++i){
+                result = concat(result,child);
+            }
+            return result;
+        }
+        ASTNode result = child;
+        for(int i = 1;i<min;++i){
+            result = concat(result,child);
+        }
+        ASTNode current = result;
+        for(int i = min+1;i<= max;++i){
+            current = concat(current,child);
+            result = or_(result,current);
+        }
+        return result;
     }
     static ASTNode capture_group(const ASTNode& child,int num){
         ASTNode node;
@@ -82,12 +98,18 @@ struct ASTNode{
         node.children.push_back(child);
         return node;
     }
-    static ASTNode slashn(int num){
-        return ASTNode(num);
+    void hasCapture(const ASTNode& node,bool& fl){
+        for(auto child:node.children){
+            hasCapture(child,fl);
+            if(child.capt_num != 0){
+                fl = true;
+                return;
+            }
+        }
+        return;
     }
-
     bool is_leaf() const{
-        return type == Type::LITERAL || type == Type::EPSILON || type == Type::SLASHN;
+        return type == Type::LITERAL || type == Type::EPSILON;
     }
     bool is_binary()const{
         return type == Type::CONCAT || type == Type::OR;
@@ -98,4 +120,3 @@ struct ASTNode{
 
 };
 
-}

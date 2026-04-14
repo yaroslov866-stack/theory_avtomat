@@ -1,6 +1,5 @@
 #pragma once
 
-namespace myregex{
 struct Token{
     enum class Type{
         LITERAL,
@@ -11,9 +10,7 @@ struct Token{
         OP_CONC,
         OP_RANGE_START,
         CAPTURE_START,
-        OP_SLASHN,
         EPSILON
-        
     };
     Type type;
     char literal;
@@ -28,4 +25,3 @@ struct Token{
     Token(int min,int max) : type(Type::OP_RANGE_START),literal(0),number(0),range_min(min),range_max(max){}
 
 };
-}
