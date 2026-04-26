@@ -65,7 +65,24 @@ struct ASTNode{
     }
 
     static ASTNode range(const ASTNode& child,int min,int max){
-       if(max == -1){
+        if(min == 0 && max == 0){
+            return epsilon();
+        }
+        if(min == 0 && max == -1){
+            return or_(epsilon(),plus(child));
+        }
+        if(min == 0 && max != -1){
+            ASTNode result =epsilon();
+            ASTNode current = child;
+            for(int i = 1; i <= max; ++i){
+                result = or_(result, current);
+                if(i < max){
+                    current = concat(current, child);
+                }
+            }
+            return result;
+        }
+        if(max == -1){
             ASTNode result = child;
             for(int i = 1;i<min;++i){
                 result = concat(result,child);

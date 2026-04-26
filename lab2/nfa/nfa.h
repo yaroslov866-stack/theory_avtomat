@@ -11,7 +11,7 @@ struct MatchResult{
     std::string full_match;
     std::map<int, std::pair<size_t, size_t>> group_positions;
     bool match()const {return success;}
-    std::string group(int id) const {
+    std::string group(int id) const{
         auto it = group_positions.find(id);
         if (it != group_positions.end() && it->second.first < it->second.second) {
             return full_match.substr(it->second.first,it->second.second - it->second.first);
@@ -47,26 +47,21 @@ class NFA{
         struct Metka{
             int start;
             int end;
-            std::set<int> started_groups;
-            std::set<int> ended_groups;
         };
         static Metka buildSym(char c,NFA& nfa);
         static Metka buildEpsilon(NFA& nfa);
         static Metka buildConcat(const Metka& left,const Metka& right,NFA& nfa);
         static Metka buildAlternation(const Metka& left, const Metka& right, NFA& nfa);
         static Metka buildPlus(const Metka& child, NFA& nfa);
-        static Metka buildRange(const Metka& child, int min, int max,NFA& nfa,const ASTNode& childNode);
         static Metka buildCaptureGroup(const Metka& child, int number, NFA& nfa);
         static Metka buildFromAST(const ASTNode& node, NFA& nfa);
-         
-        struct ResultGroup {
+        struct ClosureResult{
             std::set<int> states;
-            std::set<int> started_groups;
-            std::set<int> ended_groups;
+            std::map<int, size_t> started_groups;
+            std::map<int, size_t> ended_groups;
         };
-        std::set<int> move(const std::set<int>& states, char symbol) const;
-        ResultGroup epsilonMove(const std::set<int>& states) const;
-        ResultGroup moveWithGroups(const std::set<int>& states, char symbol) const;
+
+        ClosureResult epsilonClosure(const std::set<int>& states,size_t pos) const;
         std::vector<State> states_;
         int start_state_ = -1;
 

@@ -86,15 +86,6 @@ TEST_CASE("AST"){
         REQUIRE(node4.capt_num == 0);
         REQUIRE(node4.children[0].type == ASTNode::Type::LITERAL);
         REQUIRE(node4.children[1].type == ASTNode::Type::LITERAL);
-    //     ASTNode node5 = ASTNode::range(node,5,25);
-    //    // REQUIRE(node5.type == ASTNode::Type::RANGE);
-    //     REQUIRE(node5.literal == 0);
-    //     REQUIRE(node5.range_max == 25);
-    //     REQUIRE(node5.range_min == 5);
-    //     REQUIRE(node5.position == 0);
-    //     REQUIRE(node5.nullable == false);
-    //     REQUIRE(node5.capt_num == 0);
-    //     REQUIRE(node5.children[0].type == ASTNode::Type::LITERAL);
         ASTNode node6 = ASTNode::epsilon();
         REQUIRE(node6.type == ASTNode::Type::EPSILON);
         REQUIRE(node6.literal == 0);
@@ -171,47 +162,6 @@ TEST_CASE("Parser"){
     }
 }
 
-
-
-
-// str = "a(b|c)+v{1,5}";
-//         tokenss = Parser::tokenization(str);
-//         tokens = Parser::insert_conc(tokenss);
-//         for(auto token:tokens){
-//             std::string type;
-//             switch(token.type){
-//                 case Token::Type::LITERAL:
-//                     type = "LITERAL(" + std::string(1,token.literal) + ")";
-//                     break;
-//                 case Token::Type::LEFT_PAR:
-//                     type = "LEFT_PAR";
-//                     break;
-//                 case Token::Type::RIGHT_PAR:
-//                     type = "RIGHT_PAR";
-//                     break;
-//                 case Token::Type::OP_OR:
-//                     type = "OP_OR";
-//                     break;
-//                 case Token::Type::OP_PLUS:
-//                     type =  "OP_PLUS";
-//                     break;
-//                 case Token::Type::OP_CONC:
-//                     type = "OP_CONC";
-//                     break;
-//                 case Token::Type::OP_RANGE_START:
-//                     if (token.range_max == -1) {
-//                         type = "OP_RANGE_START(" + std::to_string(token.range_min) + ",)";
-//                     } else {
-//                         type = "OP_RANGE_START(" + std::to_string(token.range_min) + "," + 
-//                             std::to_string(token.range_max) + ")";
-//                     }
-//             }
-//             std::cout<<type<<" ";
-//         }
-//         std::cout<<std::endl;
-//         node = Parser::parse(str);
-
-/*
 TEST_CASE("DFA"){
     SECTION("FOLLOWSPOS"){
         std::string str = "a(b|c)+v";
@@ -221,9 +171,11 @@ TEST_CASE("DFA"){
         ASTNode::numeration(root,num);
         ASTNode::countNullable(root);
         ASTNode::countFirstposLastPos(root);
+        std::cout << std::endl;
         REQUIRE(root.type == ASTNode::Type::CONCAT);
         std::vector<std::set<int>> followpos(num);
         DFA::computeFollowpos(root,followpos);
+        REQUIRE(followpos[0].empty()== true);
         REQUIRE(followpos[1].count(2) == true);
         REQUIRE(followpos[1].count(3) == true);
         REQUIRE(followpos[1].count(1) == false);
@@ -235,7 +187,6 @@ TEST_CASE("DFA"){
         REQUIRE(followpos[4].count(5) == true);
         REQUIRE(followpos[4].count(4) == false);
         REQUIRE(followpos[5].empty() == true);
-        REQUIRE(DFA::findMarkerPos(root) == 5);
         std::map<int,char> posToChar;
         std::set<char> alphabet;
         DFA::collectSym(root,posToChar,alphabet);
@@ -272,18 +223,6 @@ TEST_CASE("DFA"){
         REQUIRE(root.type == ASTNode::Type::CONCAT);
         std::vector<std::set<int>> followpos1(num);
         DFA::computeFollowpos(root,followpos1);
-        REQUIRE(followpos1[1].count(2) == true);
-        REQUIRE(followpos1[1].count(3) == true);
-        REQUIRE(followpos1[1].count(1) == false);
-        REQUIRE(followpos1[1].count(4) == false);
-        REQUIRE(followpos1[2].count(3) == true);
-        REQUIRE(followpos1[2].count(2) == true);
-        REQUIRE(followpos1[2].count(4) == true);
-        REQUIRE(followpos1[3].count(4) == true);
-        REQUIRE(followpos1[4].count(5) == true);
-        REQUIRE(followpos1[4].count(4) == true);
-        REQUIRE(DFA::findMarkerPos(root) == 5);
-        REQUIRE(followpos1[5].empty() == true);
         posToChar.clear();
         alphabet.clear();
         DFA::collectSym(root,posToChar,alphabet);
@@ -298,40 +237,54 @@ TEST_CASE("DFA"){
         REQUIRE(posToChar[2] == 'b');
         REQUIRE(posToChar[3] == 'c');
         REQUIRE(posToChar[4] == 'v');
-        REQUIRE(posToChar[5] == '#');
-        REQUIRE(posToChar.size() == 5);
-        dfa = DFA::compile("l(l|d)+");
+        REQUIRE(posToChar[19] == '#');
+        dfa = DFA::compile("a(b|c)+v+");
         std::string s = "dfa.dot";
         DFA::saveToDot(dfa,s);
-        // REQUIRE(dfa.accepts("abcv") == true);
-        // REQUIRE(dfa.accepts("abc") == false);
-        // REQUIRE(dfa.accepts("accv") == true);
-        // REQUIRE(dfa.accepts("abcccccccv") == true);
-        // REQUIRE(dfa.accepts("abcccc") == false);
-        // REQUIRE(dfa.accepts("bcv") == false);
-        // REQUIRE(dfa.accepts("abv") == true);
-        // REQUIRE(dfa.accepts("abcv#") == false);
-        // REQUIRE(dfa.accepts("abcvvvvv") == true);
-        // REQUIRE(dfa.accepts("abcvvvvvvvvvv") == false);
-        // REQUIRE(dfa.accepts("abc") == false);
-
-
+        REQUIRE(dfa.accepts("abcv") == true);
+        REQUIRE(dfa.accepts("abc") == false);
+        REQUIRE(dfa.accepts("accv") == true);
+        REQUIRE(dfa.accepts("abcccccccv") == true);
+        REQUIRE(dfa.accepts("abcccc") == false);
+        REQUIRE(dfa.accepts("bcv") == false);
+        REQUIRE(dfa.accepts("abv") == true);
+        REQUIRE(dfa.accepts("abcv#") == false);
+        REQUIRE(dfa.accepts("abcvvvvv") == true);
+        REQUIRE(dfa.accepts("abcvvvvvvvvvv") == true);
+        REQUIRE(dfa.accepts("abc") == false);
     }
 }
-*/
+
 TEST_CASE("NFA"){
     SECTION("Method Metka"){
-        std::string str = "v{1,3}";
+        std::string str = "a(b|c)+(1:q)";
         ASTNode node = Parser::parse(str);
         NFA nfa = NFA::fromAST(node);
+        str = "abcbq";
+        auto d = nfa.match(str);
+        std::cout<< "qq"<<d.group(1)<<"qq"<<d.group(2)<<nfa.hasCaptureGroups()<<std::endl;
         std::string s = "nfa.dot";
         s = "nfa.dot";
         NFA::saveNFAToDot(nfa,s);
-        DFA dfa1 = DFA::compile("c");
-        s = "dfa1.dot";
-        DFA::saveToDot(dfa1,s);
-        auto ma = nfa.match("aaaa");
+        DFA dfa1 = DFA::compile("a(b|c){1,5}");
+        auto f = dfa1.search("qwe dfjl df abbdf");
+        if(f.find){
+            std::cout<<f.start<<" "<<f.end<<std::endl;
+        }
+        DFA dfa2 = DFA::compile("a(b|c)+v{1,5}");
+        DFA dfa3 = dfa2.minimize();
+         DFA dfa5 = dfa2.reverse();
+        // DFA dfa3 = dfa1.subtract(dfa2);
+        // std::cout<<dfa3.accepts("acccc")<<std::endl;
+        // std::cout<<dfa3.accepts("accc")<<std::endl;
 
+        s = "dfa1.dot";
+        DFA::saveToDot(dfa2,s);
+        // auto ma = nfa.match("aaaa");
+        // std::string reg = dfa1.toRegex();
+        // std::cout<<std::endl;
+        // std::cout<<reg<<std::endl;
+        
         // auto ma1 = nfa.match("aacvbndq");
         // REQUIRE(ma1.match()== false);
         // REQUIRE(nfa.hasCaptureGroups() == true);
@@ -356,25 +309,17 @@ TEST_CASE("NFA"){
 }
 
 
-/*
-DFA dfa = DFA::compile("a(b|c)+");
-        REQUIRE(dfa.accepts("abc") == false);
-        REQUIRE(dfa.accepts("acc") == true);
-        REQUIRE(dfa.accepts("b") == false);
-        REQUIRE(dfa.accepts("aab") == false);
-        REQUIRE(dfa.accepts("ac") == true);
-        REQUIRE(dfa.accepts("Ab") == false);
-        REQUIRE(dfa.accepts("c") == false);
-        REQUIRE(dfa.accepts("a#") == false);
-        REQUIRE(dfa.accepts("abbb") == true);
-        REQUIRE(dfa.accepts("abb") == true);
-        REQUIRE(dfa.accepts("a") == false);
-        DFA dfa1 = DFA::compile("a*(b|c)d*e");
-        REQUIRE(dfa1.accepts("abde") == true);
-        */
 TEST_CASE("Pattern"){
     SECTION("constructor"){
-        Pattern pattern("acb(1:2)");
+        Pattern pattern("a(b|c)+(1:q)");
+        std::string text = "addf abcqds";
+        //auto result = pattern.search(text);
+        //REQUIRE(result.find == true);
+        text = "abcq";
+        auto result1 = pattern.match(text);
+        REQUIRE(result1.success == true);
+        REQUIRE(result1.full_match == "abcq");
+        REQUIRE(result1.group(1) == "q");
 
     }
 }

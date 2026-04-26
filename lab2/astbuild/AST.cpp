@@ -1,5 +1,5 @@
 #include "AST.h"
-
+#include <iostream>
 
 void ASTNode::countNullable(ASTNode& node){
     for(auto& child:node.children){
@@ -107,7 +107,8 @@ std::set<int> ASTNode::unityset(const std::set<int>& first,const std::set<int>& 
 
 void ASTNode::numeration(ASTNode& node,int& count){
     if(node.type == ASTNode::Type::LITERAL || node.type == ASTNode::Type::EPSILON){
-        node.position = count++;
+        node.position = count;
+        count++;
     }
     for(auto& child:node.children){
         numeration(child,count);

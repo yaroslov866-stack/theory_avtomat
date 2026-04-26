@@ -2,16 +2,24 @@
 #include <iostream>
 #include <stack>
 ASTNode Parser::parse(const std::string& str){
-    std::vector<Token> tokens = tokenization(str);
-    std::vector<Token> tokens_conc = insert_conc(tokens);
-    ASTNode node = buildTree(tokens_conc);
-    return node;
+    try{
+        std::vector<Token> tokens = tokenization(str);
+        std::vector<Token> tokens_conc = insert_conc(tokens);
+        ASTNode node = buildTree(tokens_conc);
+        return node;
+    }
+    catch(...){
+        throw;
+    }
+    
 }
 
 int Parser::find_number(const std::string& str,size_t& i){
-    if(str.empty())throw;
+    if(str.empty())throw std::runtime_error("Empty find_number");
     int num = 0;
-    i++;
+    if(i>= str.length() || !std::isdigit(str[i])){
+        throw (std::runtime_error("Error { or ("));
+    }
     while(i<str.length() && std::isdigit(str[i])){
         num = num*10 + (str[i]- '0');
         i++;
@@ -77,9 +85,17 @@ std::vector<Token> Parser::tokenization(const std::string& str){
         else if(c == '('){
             if(i < str.length() && std::isdigit(str[i+1])){
                 tok.type = Token::Type::CAPTURE_START;
+                i++;
                 tok.number = find_number(str,i);
-                res.push_back(tok);
-                continue;
+                if(str[i] == ':'){
+                    res.push_back(tok);
+                    continue;
+                }
+                else{
+                    tok.type = Token::Type::LEFT_PAR;
+                    res.push_back(tok);
+                    continue;
+                }
             }
             else{
                 tok.type = Token::Type::LEFT_PAR;
@@ -106,20 +122,36 @@ std::vector<Token> Parser::tokenization(const std::string& str){
         }
         else if(c == '{'){
             if(i+1>=str.length() || isalpha(str[i+1])){
-                throw;
+                throw std::runtime_error("Error { ");
             }
             tok.type = Token::Type::OP_RANGE_START;
+            i++;
             int min = find_number(str,i);
+            if(i >= str.length()){
+                throw std::runtime_error("Unclosed {");
+            }
             if(str[i+1] == '}'){
                 tok.range_max = -1;
-                i +=2;
+                i++;
+            }
+            else if(str[i] == ','){
+                i++;
+                if(i < str.length() && std::isdigit(str[i])){
+                    int max = find_number(str, i);
+                    tok.range_max = max;
+                }
+                else{
+                    tok.range_max = -1;
+                }
+                if(i >= str.length() || str[i] != '}'){
+                    throw std::runtime_error("Missing } in range");
+                }
+                i++;
+                tok.range_min = min;
             }
             else{
-                int max = find_number(str,i);
-                tok.range_max = max;
-                //i++;
+                throw std::runtime_error("Invalid range syntax");
             }
-            tok.range_min = min;
             res.push_back(tok);
             continue;
         }
@@ -164,7 +196,6 @@ ASTNode Parser::buildTree(const std::vector<Token>& tok){
     std::vector<Token> tokens = tok;
     std::stack<ASTNode> leaf_st;
     std::stack<Token> oper_st;
-    size_t prior = 0;
     for(auto& token:tokens){
         if(token.type == Token::Type::LITERAL){
             leaf_st.push(ASTNode::literal_(token.literal));
@@ -173,11 +204,17 @@ ASTNode Parser::buildTree(const std::vector<Token>& tok){
             leaf_st.push(ASTNode::epsilon());
         }
         else if(token.type == Token::Type::OP_PLUS){
+            if(leaf_st.empty()){
+                throw std::runtime_error("Ничего нет перед +");
+            }
             ASTNode child = leaf_st.top();
             leaf_st.pop();
             leaf_st.push(ASTNode::plus(child));
         }
         else if(token.type == Token::Type::OP_RANGE_START){
+            if(leaf_st.empty()){
+                throw std::runtime_error("Ничего нет перед {}");
+            }
             ASTNode child = leaf_st.top();
             leaf_st.pop();
             leaf_st.push(ASTNode::range(child,token.range_min,token.range_max));
@@ -205,6 +242,9 @@ ASTNode Parser::buildTree(const std::vector<Token>& tok){
                 }
                 
             }
+            if(oper_st.empty()) {
+                throw std::runtime_error("Не найдено открытие скобки (");
+            }
             if(!oper_st.empty() && oper_st.top().type == Token::Type::CAPTURE_START){
                 Token capture = oper_st.top(); 
                 oper_st.pop();
@@ -217,7 +257,7 @@ ASTNode Parser::buildTree(const std::vector<Token>& tok){
             }
         }
         else if(token.type == Token::Type::OP_OR ||token.type == Token::Type::OP_CONC) {
-            while (!oper_st.empty() && oper_st.top().type != Token::Type::LEFT_PAR &&oper_st.top().type != Token::Type::CAPTURE_START &&
+            while(!oper_st.empty() && oper_st.top().type != Token::Type::LEFT_PAR &&oper_st.top().type != Token::Type::CAPTURE_START &&
                    prioritet(oper_st.top()) >= prioritet(token)) {
                 Token op = oper_st.top();
                 oper_st.pop();
@@ -259,7 +299,7 @@ ASTNode Parser::buildTree(const std::vector<Token>& tok){
         }
     }
     if(leaf_st.size() !=1){
-        throw;
+        throw std::runtime_error("ERROR stack:not empty");
     }
     return leaf_st.top();
 }
