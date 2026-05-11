@@ -6,6 +6,7 @@ class Pattern{
         DFA dfa;
         NFA nfa;
         std::string str;
+        bool group;
     public:
         DFA getDFA()const;
         Pattern()= default;

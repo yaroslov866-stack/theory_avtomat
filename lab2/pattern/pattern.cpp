@@ -6,6 +6,7 @@ Pattern::Pattern(const std::string& rv){
     bool fl = false;
     node.hasCapture(node,fl);
     if(fl){
+        group = fl;
         nfa = NFA::fromAST(node);
         return;
     }
@@ -36,5 +37,8 @@ Pattern Pattern::reverse()const{
 }
 
 MatchResult Pattern::match(std::string& str){
+    if(!group){
+        return {};
+    }
     return nfa.match(str);
 }

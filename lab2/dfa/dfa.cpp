@@ -5,94 +5,76 @@
 #include <stack>
 #include <functional>
 
-
-
-
-DFA DFA::makeComplete(const std::set<char>& alphabet) const {
+DFA DFA::makeComplete(const std::set<char>& alphabet)const{
     DFA complete;
     complete.alphabet_ = alphabet;
-
-    for (size_t i = 0; i < states_.size(); ++i) {
-        complete.addState(states_[i].is_accept);
+    for(const auto& state : states_){
+        complete.addState(state.is_accept);
     }
     complete.setStartState(start_state);
-    bool needSink = false;
-    for (size_t i = 0; i < states_.size() && !needSink; ++i) {
-        for (char c : alphabet) {
-            if (states_[i].transitions.find(c) == states_[i].transitions.end()) {
-                needSink = true;
-                break;
-            }
-        }
+    int sink = complete.addState(false);
+    for(char c:alphabet){
+        complete.addTransition(sink,c,sink);
     }
-
-    int sink = -1;
-    if (needSink) {
-        sink = complete.addState(false);
-        for (char c : alphabet)
-            complete.addTransition(sink, c, sink);
-    }
-
-    for (size_t i = 0; i < states_.size(); ++i) {
-        for (char c : alphabet) {
+    for(int i=0;i<states_.size();++i){
+        for(char c:alphabet){
+            int next = sink;
             auto it = states_[i].transitions.find(c);
-            if (it != states_[i].transitions.end())
-                complete.addTransition(i, c, it->second);
-            else if (needSink)
-                complete.addTransition(i, c, sink);
+            if(it != states_[i].transitions.end()){
+                next = it->second;
+            }
+            complete.addTransition(i,c,next);
         }
     }
-
     return complete;
 }
-DFA DFA::subtract(const DFA& other) const {
-    std::set<char> commonAlphabet = this->alphabet_;
-    commonAlphabet.insert(other.alphabet_.begin(), other.alphabet_.end());
-    DFA completeThis  = this->makeComplete(commonAlphabet);
-    DFA completeOther = other.makeComplete(commonAlphabet);
-    DFA result;
-    result.alphabet_ = commonAlphabet;
 
-    std::map<std::pair<int,int>, int> pairToState;
-    std::queue<std::pair<int,int>> queue;
-    auto getOrCreate = [&](int s1, int s2) -> int {
-        auto key = std::make_pair(s1, s2);
-        auto it = pairToState.find(key);
-        if (it != pairToState.end())
-            return it->second;
-        bool accept = completeThis.states_[s1].is_accept &&
-                      !completeOther.states_[s2].is_accept;
-        int newId = result.addState(accept);
-        pairToState[key] = newId;
-        queue.push(key);
-        return newId;
-    };
-
-    int startIdx = getOrCreate(completeThis.start_state, completeOther.start_state);
-    result.setStartState(startIdx);
-
-    while (!queue.empty()) {
-        auto [s1, s2] = queue.front();
-        queue.pop();
-        int from = pairToState[{s1, s2}];
-
-        for (char c : commonAlphabet) {
-            int next1 = completeThis.states_[s1].transitions.at(c);
-            int next2 = completeOther.states_[s2].transitions.at(c);
-            int to = getOrCreate(next1, next2);
-            result.addTransition(from, c, to);
+DFA DFA::subtract(const DFA& other)const{
+    std::set<char> allalph = alphabet_;
+    allalph.insert(other.alphabet_.begin(), other.alphabet_.end());
+    DFA a = makeComplete(allalph);
+    DFA b = other.makeComplete(allalph);
+    DFA res;
+    res.alphabet_ = allalph;
+    std::map<std::pair<int,int>, int> seen;
+    std::vector<std::pair<int,int>> stack;
+    auto start = std::make_pair(a.start_state, b.start_state);
+    int startId = res.addState(a.states_[a.start_state].is_accept && !b.states_[b.start_state].is_accept);
+    seen[start] = startId;
+    stack.push_back(start);
+    res.setStartState(startId);
+    for(size_t i=0;i<stack.size();++i){
+        int s1 = stack[i].first;
+        int s2 = stack[i].second;
+        int from = seen[{s1, s2}];
+        for(char c:allalph){
+            int t1 = a.states_[s1].transitions.at(c);
+            int t2 = b.states_[s2].transitions.at(c);
+            auto key = std::make_pair(t1, t2);
+            int to;
+            auto it = seen.find(key);
+            if(it == seen.end()){
+                to = res.addState(a.states_[t1].is_accept && !b.states_[t2].is_accept);
+                seen[key] = to;
+                stack.push_back(key);
+            }
+            else{
+                to = it->second;
+            }
+            res.addTransition(from, c, to);
         }
     }
-
-    return result;
+    
+    return res;
 }
 
 void DFA::addOrMergeTransition(int from, int to, const std::string& regex) {
     auto key = std::make_pair(from, to);
     auto it = regexTransitions_.find(key);
-    if (it == regexTransitions_.end()) {
+    if(it == regexTransitions_.end()){
         regexTransitions_[key] = regex;
-    } else {
+    }
+    else{
         regexTransitions_[key] = "(" + it->second + "|" + regex + ")";
     }
 }
@@ -105,16 +87,16 @@ std::string DFA::getTransitionRegex(int from, int to) const {
     return "";
 }
 
-void DFA::eliminateState(int state) {
+void DFA::eliminateState(int state){
     std::vector<std::pair<int, std::string>> incoming;
-    for (const auto& [key, regex] : regexTransitions_) {
-        if (key.second == state && key.first != state) {
+    for(const auto& [key, regex]:regexTransitions_){
+        if(key.second == state && key.first != state){
             incoming.push_back({key.first, regex});
         }
     }
-    std::vector<std::pair<int, std::string>> outgoing;
-    for (const auto& [key, regex] : regexTransitions_) {
-        if (key.first == state && key.second != state) {
+    std::vector<std::pair<int,std::string>> outgoing;
+    for(const auto& [key, regex]:regexTransitions_){
+        if(key.first == state && key.second != state){
             outgoing.push_back({key.second, regex});
         }
     }
@@ -123,14 +105,14 @@ void DFA::eliminateState(int state) {
     if(it != regexTransitions_.end()){
         loop = it->second;
     }
-    for(const auto& [from, inRegex] : incoming){
-        for(const auto& [to, outRegex] : outgoing){
+    for(const auto& [from, inRegex]:incoming){
+        for(const auto& [to, outRegex]:outgoing){
             std::string newRegex;
             if(loop.empty()){
-                newRegex = inRegex + outRegex;
+                newRegex=inRegex+outRegex;
             }
             else{
-                newRegex = inRegex + "(" + loop + ")*" + outRegex;
+                newRegex=inRegex+"("+loop+")*"+outRegex;
             }
             addOrMergeTransition(from, to, newRegex);
         }
@@ -238,14 +220,14 @@ std::string DFA::simplifyRegex(const std::string& regex) const {
 std::string DFA::toRegex() const {
     DFA temp = *this;
     temp.regexTransitions_.clear();
-    for (size_t i = 0; i < temp.states_.size(); ++i) {
-        for (const auto& [symbol, to] : temp.states_[i].transitions) {
-            std::string sym(1, symbol);
-            temp.addOrMergeTransition(i, to, sym);
+    for(size_t i = 0; i < temp.states_.size(); ++i){
+        for(const auto& [symbol, to] : temp.states_[i].transitions){
+            std::string sym(1,symbol);
+            temp.addOrMergeTransition(i,to,sym);
         }
     }
-    for (size_t i = 0; i < temp.states_.size(); ++i) {
-        temp.addOrMergeTransition(i, i, "^");
+    for(size_t i=0;i<temp.states_.size();++i){
+        temp.addOrMergeTransition(i,i,"^");
     }
     int newStart = temp.states_.size();
     temp.states_.push_back({});
@@ -253,8 +235,8 @@ std::string DFA::toRegex() const {
     int newFinal = temp.states_.size();
     temp.states_.push_back({});
     for(size_t i = 0; i < states_.size(); ++i){
-        if (states_[i].is_accept) {
-            temp.addOrMergeTransition(i, newFinal, "^");
+        if(states_[i].is_accept){
+            temp.addOrMergeTransition(i,newFinal,"^");
         }
     }
     std::vector<int> toRemove;
@@ -622,63 +604,29 @@ DFA DFA::minimize() const {
 DFA::Capture_res DFA::search(const std::string& text) const {
     Capture_res result;
     result.find = false;
-    if(start_state == -1)return result;
+    if(start_state == -1){
+        return result;
+    }
     size_t n = text.size();
-    for(size_t start=0;start<=n;++start){
+    for(size_t start = 0; start < n; ++start){
         int state = start_state;
-        size_t pos = start;
-        struct GroupInfo{
-            size_t start;
-            bool closed;
-            size_t end;
-        };
-        std::map<int, GroupInfo> groups;
-        bool everAccepted = false;
-        size_t bestEnd = 0;
-        std::map<int, std::pair<size_t, size_t>> bestGroups;
-        auto saveAccept = [&](){
-            everAccepted = true;
-            bestEnd = pos;
-            bestGroups.clear();
-            for(const auto& [grp, info] : groups){
-                if (info.closed){
-                    bestGroups[grp] = {info.start, info.end};
-                }
-                else{
-                    bestGroups[grp] = {info.start, pos};
-                }
-            }
-        };
-        while(pos < n){
+        for(size_t pos = start; pos < n; ++pos){
             char c = text[pos];
             auto it = states_[state].transitions.find(c);
-            if (it == states_[state].transitions.end()) break;
+            if(it == states_[state].transitions.end()){
+                break;  
+            }        
             state = it->second;
-            ++pos;
-            const State& st = states_[state];
-            if(st.is_accept){
-                saveAccept();
-            }
-        }
-        if(everAccepted){
-            result.find = true;
-            result.start = start;
-            result.end = bestEnd;
-            result.capture = bestGroups;
-            if(bestEnd == start){
-                start = bestEnd;
-            }
-            else{
+            if(states_[state].is_accept){
+                result.find = true;
+                result.start = start;
+                result.end = pos + 1;
                 return result;
             }
         }
     }
     return result;
 }
-
-
-
-
 
 
 

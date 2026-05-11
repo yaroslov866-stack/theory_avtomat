@@ -34,11 +34,12 @@ class DFA{
         std::string getTransitionRegex(int from, int to) const;
         void addOrMergeTransition(int from, int to, const std::string& regex);
         std::string simplifyRegex(const std::string& regex) const;
-        mutable std::map<std::pair<int, int>, std::string> regexTransitions_;
+       
         DFA reverse() const;
         DFA makeComplete(const std::set<char>& alphabet) const;
         Capture_res search(const std::string& text) const;
     //private:
+        mutable std::map<std::pair<int, int>, std::string> regexTransitions_;
         std::vector<State> states_;
         int start_state = -1;
         std::set<char> alphabet_;

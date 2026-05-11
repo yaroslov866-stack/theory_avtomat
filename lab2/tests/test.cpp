@@ -103,6 +103,13 @@ TEST_CASE("AST"){
         REQUIRE(node7.nullable == false);
         REQUIRE(node7.capt_num == 0);
         REQUIRE(node7.children[0].type == ASTNode::Type::LITERAL);
+        ASTNode node8 = ASTNode::range(node,1,3);
+        REQUIRE(node8.children[0].type == ASTNode::Type::OR);
+        REQUIRE(node8.children[0].children[1].type == ASTNode::Type::CONCAT);
+        REQUIRE(node8.children[0].children[1].children[0].type == ASTNode::Type::LITERAL);
+        REQUIRE(node8.children[1].children[1].type == ASTNode::Type::LITERAL);
+
+
     }
     SECTION("Test function"){
         ASTNode node = ASTNode::literal_('a');
@@ -262,24 +269,27 @@ TEST_CASE("NFA"){
         NFA nfa = NFA::fromAST(node);
         str = "abcbq";
         auto d = nfa.match(str);
-        std::cout<< "qq"<<d.group(1)<<"qq"<<d.group(2)<<nfa.hasCaptureGroups()<<std::endl;
+        REQUIRE(d.group(1) == "q");
+        REQUIRE(d.success == true);
+        REQUIRE(d.full_match == "abcbq");
         std::string s = "nfa.dot";
         s = "nfa.dot";
         NFA::saveNFAToDot(nfa,s);
-        DFA dfa1 = DFA::compile("a(b|c){1,5}");
-        auto f = dfa1.search("qwe dfjl df abbdf");
-        if(f.find){
-            std::cout<<f.start<<" "<<f.end<<std::endl;
-        }
-        DFA dfa2 = DFA::compile("a(b|c)+v{1,5}");
-        DFA dfa3 = dfa2.minimize();
-         DFA dfa5 = dfa2.reverse();
-        // DFA dfa3 = dfa1.subtract(dfa2);
+        DFA dfa1 = DFA::compile("(ab|ac|bc|abc)");
+        DFA dfa2 = DFA::compile("(ac|bc|cc)");
+        std::cout<<dfa2.toRegex()<<std::endl;
+        //DFA dfa3 = dfa2.minimize();
+        DFA dfa5 = dfa2.reverse();
+        DFA dfa3 = dfa1.subtract(dfa2);
+        REQUIRE(dfa3.accepts("ab") == true);
+        REQUIRE(dfa3.accepts("abc") == true);
+        REQUIRE(dfa3.accepts("ac") == false);
+        REQUIRE(dfa3.accepts("bc") == false);
         // std::cout<<dfa3.accepts("acccc")<<std::endl;
         // std::cout<<dfa3.accepts("accc")<<std::endl;
 
-        s = "dfa1.dot";
-        DFA::saveToDot(dfa2,s);
+        // s = "dfa1.dot";
+        // DFA::saveToDot(dfa2,s);
         // auto ma = nfa.match("aaaa");
         // std::string reg = dfa1.toRegex();
         // std::cout<<std::endl;
@@ -311,15 +321,16 @@ TEST_CASE("NFA"){
 
 TEST_CASE("Pattern"){
     SECTION("constructor"){
-        Pattern pattern("a(b|c)+(1:q)");
+        Pattern pattern("a(b|c)+");
         std::string text = "addf abcqds";
-        //auto result = pattern.search(text);
-        //REQUIRE(result.find == true);
+        auto result = pattern.search(text);
+        REQUIRE(result.find == true);
+        REQUIRE(result.start == 5);
+        REQUIRE(result.end == 7);
         text = "abcq";
         auto result1 = pattern.match(text);
-        REQUIRE(result1.success == true);
-        REQUIRE(result1.full_match == "abcq");
-        REQUIRE(result1.group(1) == "q");
+        REQUIRE(result1.success == false);
+
 
     }
 }
