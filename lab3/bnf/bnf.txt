@@ -1,0 +1,47 @@
+<program> ::= "<PROGRAM>" <program_body> "</PROGRAM>"
+
+////Объявление переменных
+
+<program_body> ::= "" | <program_body> <function> | <program_body> <initial_var>
+<initial_var> ::= "<VARDECLARATION>" <var>+ "</VARDECLARATION>"
+<var> ::= "<VAR " <option_var> ">" <type> <dimension_block>*<value>* "</VAR>"
+<option_var> ::= "name=" <indetify_name> [" CONST=" <bool_const>]
+<type> ::= "<TYPE>" ("INT"|"BOOL"|"CELL") "</TYPE>"
+<dimension_block> ::= "<DIMENSIONS count=" <int_lit> ">" <dimension>+ "</DIMENSIONS>"
+<dimension> ::= "<DIMENSION>" <action> "</DIMENSION>"
+<value> ::= "<VALUES>" ("<VALUE>" <action> "</VALUE>")+ "</VALUES>"
+
+/////Объявление функций
+
+<function> ::= "<FUNC name=" <indetify_name> ">" {<operator>} "</FUNC>"
+/////Объявление операторов
+<operator> ::= <assignment> | <while> | <switch> | <movement> | <function_call> | <send_drones> | <get_drones_count>
+<assignment> ::= "<ASSIGN>" "<VALUE>" <action> "</VALUE> "<TO>" <variable>+ "</TO>" "</ASSIGN>"
+<while> ::= "<WHILE>" "<CHECK>" <action> "</CHECK>" "<DO>" operator>+ "</DO>" "</WHILE>"
+<switch> ::= "<SWITCH>" <switch_case>+"</SWITCH>"
+<switch_case> ::= "<CONDITION>" "<CHECK>" <action> "</CHECK>" "<DO>" <operator>+ "</DO>" "</CONDITION>"
+<movement> ::= "<LEFT>" <action> "</LEFT> | "<RIGHT>" <action> "</RIGHT>" | "<UP>" <action> "</UP>" |"<DOWN>" <action> "</DOWN>"
+<send_drones> ::= "<SENDDRONS>" <action> "</SENDDRONS>"
+<get_drones_count> ::= "<GETDRONSCOUNT>" <variable> "</GETDRONSCOUNT>"
+<function_call> ::= "<CALL>" <indetify_name> "</CALL>"
+
+/////Действия
+
+<action> ::= <int_lit> | <bool_lit> | <cell_lit> | <variable> | <function_call>
+            | "<ADD> <action> <action>+ "</ADD>" |"<MUL> <action> <action>+ "</MUL>" | "<SUB>" <action> <action> "</SUB>" | "<DIV> <action> <action> "</DIV>" 
+            | "<NOT>" <action> "</NOT>" | "<AND>" <action> <action>+ "</AND>" | "<OR>" <action> <action>+ "</OR>" | "<MAX>" <action>+ "</MAX>" |"<MIN>" <action>+ "</MIN>"
+            | "<EQ>" <action>+ "</EQ>" 
+<variable> ::= "<VAR name=" <indetify_name> "/>"  | "<VAR name=" <indetify_name> ">" <dim_access>+ "</VAR>"
+<dim_access> ::= "<DIM>" "<INDEX>" <action> "</INDEX>" "</DIM>"
+
+/////Литералы
+
+<int_lit> ::= "-"* <digit>+
+<bool_lit> ::= "true" | "false"
+<cell_lit> ::= "EMPTY" | "WALL" | "EXIT" | "UNDEF"
+<bool_const> ::= "TRUE"|"FALSE"
+<indetify_name> ::= <letter> (<letter>|<digit>)+
+<letter> ::= "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z"
+           | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
+
+<digit> ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"

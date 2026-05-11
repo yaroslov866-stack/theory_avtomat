@@ -1,0 +1,429 @@
+%language "c++"
+%define api.value.type variant
+
+
+%token <int> INT_LIT BOOL_LIT CELL_LIT
+%token <std::string> IDENTIFIER
+%token <int> TRUE_VAL FALSE_VAL
+
+%token PROGRAM PROGRAM_END
+%token VARDECL VARDECL_END
+%token VAR VAR_END
+%token NAME CONST
+%token TYPE TYPE_END
+%token INT_TYPE BOOL_TYPE CELL_TYPE
+%token DIMENSIONS COUNT DIMENSIONS_END DIMENSION DIMENSION_END
+%token VALUES VALUES_END VALUE VALUE_END
+%token FUNC FUNC_END
+%token ASSIGN VALUEIN VALUE_ENDIN TO TO_END ASSIGN_END
+%token WHILE WHILE_END CHECK CHECK_END DO DO_END
+%token SWITCH SWITCH_END CONDITION CONDITION_END
+%token LEFT LEFT_END RIGHT RIGHT_END UP UP_END DOWN DOWN_END
+%token SENDDRONS SENDDRONS_END
+%token GETDRONSCOUNT GETDRONSCOUNT_END
+%token CALL CALL_END
+%token ADD ADD_END MUL MUL_END SUB SUB_END DIV DIV_END
+%token NOT NOT_END AND AND_END OR OR_END
+%token MAX MAX_END MIN MIN_END EQ EQ_END
+%token DIM DIM_END INDEX INDEX_END
+%token '>'
+
+%type <int> expression int_lit bool_lit cell_lit
+%type <int> add_expr_list mul_expr_list and_expr_list or_expr_list
+%type <int> max_expr_list min_expr_list eq_expr_list
+%type <std::string> indetify_name
+
+%code{
+    #include <string>
+    #include <unordered_map>
+    #include <vector>
+    #include <functional>
+    #include "../symbol/sym.h"
+    #include "../interpretator/inter.h"
+    Interpreter* interpreter = new Interpreter(1,1);
+    bool has_main = false;
+    std::string last_var_name;
+    int last_var_type = 0;
+    bool last_var_is_const = false;
+    int last_var_init_value = 0;
+    
+    int yylex(yy::parser::semantic_type* yylval);
+    void yyerror(const std::string& msg) {
+        std::cerr << "Parser error: " << msg <<" Строка "<< std::endl;
+    }
+    void yy::parser::error(const std::string& msg) {
+        yyerror(msg);
+    }
+    
+    
+    void add_symbol(const std::string& name, int type, bool is_const, int init_val) {
+       interpreter->add_symbols(name,static_cast<Typee>(type),is_const,init_val);
+    }
+    
+    int get_variable(const std::string& name) {
+        return interpreter->get_int(name);
+    }
+    
+    void set_variable(const std::string& name, int value) {
+
+    }
+    
+    void add_target(const std::string& name){
+        if(interpreter){interpreter->add_target(name);}
+    }
+    
+    void assign_to_targets(int value){
+        if(interpreter){interpreter->assign_to_targets(value);}
+    }
+    
+    void move_left(int steps){
+        if(interpreter){interpreter->move_left(steps);}
+    }
+    
+    void move_right(int steps){
+        if(interpreter){interpreter->move_right(steps);}
+    }
+    
+    void move_up(int steps){
+        if (interpreter){interpreter->move_up(steps);}
+    }
+    
+    void move_down(int steps){
+        if(interpreter){interpreter->move_down(steps);}
+    }
+    
+    void send_drones(int count){
+        if(interpreter){interpreter->send_drones(count);}
+    }
+    
+    int get_drones_count(){
+        if(interpreter){
+            return interpreter->get_drones_count();
+        }
+        return 0;
+    }
+    
+    void execute_function(const std::string& name){
+         if(interpreter){interpreter->execute_function(name);}
+    }
+}
+
+%%
+
+program: 
+    PROGRAM program_body PROGRAM_END {
+        if(!has_main){
+            yyerror("Error not found main");
+            YYERROR;
+        }
+        
+        std::cout<<"Good\n";
+        interpreter->execute_function("main");
+        std::cout<<interpreter->robot.x<<std::endl;
+        std::cout<<interpreter->robot.y<<std::endl;
+    }
+    ;
+
+program_body:
+    %empty
+    | program_body initial_var
+    | program_body function
+    ;
+
+initial_var: 
+    VARDECL var_list VARDECL_END
+    ;
+
+var_list: 
+    var 
+    | var_list var
+    ;
+
+var: 
+    VAR option_var '>' type dimensions_opt values_opt VAR_END {
+        add_symbol(last_var_name, last_var_type, last_var_is_const, last_var_init_value);
+    }
+    ;
+
+option_var: 
+    NAME '=' indetify_name {
+        last_var_name = $3;
+        last_var_is_const = false;
+        last_var_init_value = 0;
+    } 
+    | NAME '=' indetify_name CONST '=' TRUE_VAL{
+        last_var_name = $3;
+        last_var_is_const = $6;
+        last_var_is_const = true; 
+        last_var_init_value = 1;       
+    }
+    | NAME '=' indetify_name CONST '=' FALSE_VAL{
+        last_var_name = $3;
+        last_var_is_const = $6;
+        last_var_is_const = false; 
+        last_var_init_value=0;       
+    }
+    ;
+
+
+type: 
+    TYPE type_name TYPE_END
+    ;
+
+type_name: 
+    INT_TYPE { last_var_type = 0; } 
+    | BOOL_TYPE { last_var_type = 1; } 
+    | CELL_TYPE { last_var_type = 2; }
+    ;
+
+dimensions_opt:
+    %empty
+    | dimensions
+    ;
+
+dimensions: 
+    DIMENSIONS COUNT '=' INT_LIT '>' dimensions_list DIMENSIONS_END
+    ;
+
+dimensions_list: 
+    dimension 
+    | dimensions_list dimension
+    ;
+
+dimension: 
+    DIMENSION INT_LIT DIMENSION_END
+    ;
+
+values_opt:
+    %empty
+    | values
+    ;
+
+values: 
+    VALUES values_list VALUES_END
+    ;
+
+values_list: 
+    value 
+    | values_list value
+    ;
+
+value: 
+    VALUE expression VALUE_END {
+        last_var_init_value = $2;
+        std::cout<<"val"<< last_var_init_value<<std::endl;
+    }
+    ;
+
+function: 
+    FUNC NAME '=' indetify_name '>'{
+        interpreter->begin_function($4);
+        if($4 == "main"){
+            has_main = true;
+        }
+    }
+    action_list FUNC_END{
+        interpreter->end_function();
+    }
+    ;
+
+action_list:
+    %empty
+    | action_list action
+    ;
+
+action: 
+    assignment 
+    | while 
+    | switch
+    | movement 
+    | function_call 
+    | send_drones 
+    | get_drones_count
+    ;
+
+assignment: 
+    ASSIGN VALUEIN expression VALUE_ENDIN TO var_ref_list TO_END ASSIGN_END{
+        assign_to_targets($3);
+    }
+    ;
+
+var_ref_list: 
+    variable{
+        add_target(last_var_name);
+    }
+    | var_ref_list variable{
+        add_target(last_var_name);
+    }
+    ;
+
+variable: 
+    VAR NAME '=' indetify_name '/' '>' {last_var_name = $4;}
+    | VAR NAME '=' indetify_name '>' dim_index_list VAR_END{last_var_name = $4;}
+    ;
+
+dim_index_list: 
+    dim_index 
+    | dim_index_list dim_index
+    ;
+
+dim_index: 
+    DIM INDEX expression INDEX_END DIM_END {
+        std::cout<<"Index"<< $3<<std::endl;
+    }
+    ;
+
+movement: 
+    LEFT expression LEFT_END { move_left($2); }
+    | RIGHT expression RIGHT_END { move_right($2); }
+    | UP expression UP_END { move_up($2); }
+    | DOWN expression DOWN_END { move_down($2); }
+    ;
+
+while: 
+    WHILE CHECK expression CHECK_END DO action_list DO_END WHILE_END {
+        std::cout<<"loop ready action " <<$3<<std::endl;
+    }
+    ;
+
+switch: 
+    SWITCH case_list SWITCH_END
+    ;
+
+case_list: 
+    case_item 
+    | case_list case_item
+    ;
+
+case_item: 
+    CONDITION CHECK expression CHECK_END DO action_list DO_END CONDITION_END
+    ;
+
+send_drones: 
+    SENDDRONS expression SENDDRONS_END{
+        send_drones($2);
+    }
+    ;
+
+get_drones_count: 
+    GETDRONSCOUNT variable GETDRONSCOUNT_END {
+        int count = get_drones_count();
+        interpreter->symbols.set_int(last_var_name, count);
+    }
+    ;
+
+function_call: 
+    CALL indetify_name CALL_END {
+        std::cout<<"Function: "<<$2<<std::endl;
+    }
+    ;
+
+expression: 
+    int_lit { $$ = $1; }
+    | bool_lit { $$ = $1; }
+    | cell_lit { $$ = $1; }
+    | indetify_name { 
+        $$ = get_variable($1); 
+        std::cout<<"Чтение переменной"<< $1<<"=" <<$$<<std::endl;
+    }
+    | ADD add_expr_list ADD_END { 
+        $$ = $2; 
+        std::cout<<"Result add " <<$$<<std::endl;
+    }
+    | MUL mul_expr_list MUL_END { 
+        $$ = $2; 
+        std::cout<<"Result mul " <<$$<<std::endl;
+    }
+    | SUB expression expression SUB_END { 
+        $$ = $2 - $3; 
+        std::cout<<"SUB "<< $2<<"-"<<$3<<"="<<$$<<std::endl;
+    }
+    | DIV expression expression DIV_END {
+        if($3 == 0){
+            yyerror("Div zero");
+            $$ = 0;
+        }
+        else{
+            $$ = $2 / $3;
+            std::cout<<"DIV: "<<$2<<"/"<<$3<<"="<<$$<<std::endl;
+        }
+    }
+    | NOT expression NOT_END { 
+        $$ = ($2 == 0) ? 1 : 0; 
+        std::cout<<"NOT "<<$2<<" "<<$$<<std::endl;
+    }
+    | AND and_expr_list AND_END { 
+        $$ = $2; 
+        std::cout<<"AND res= "<< $$<<std::endl;
+    }
+    | OR or_expr_list OR_END { 
+        $$ = $2; 
+        std::cout<<"OR: RES " <<$$<<std::endl;
+    }
+    | MAX max_expr_list MAX_END { 
+        $$ = $2; 
+        std::cout<<"MAX: RES " <<$$<<std::endl;
+    }
+    | MIN min_expr_list MIN_END { 
+        $$ = $2; 
+        std::cout<<"MIN: RES " <<$$<<std::endl;
+    }
+    | EQ eq_expr_list EQ_END { 
+        $$ = $2; 
+        std::cout<<"EQ: RES " <<$$<<std::endl;
+    }
+    ;
+
+add_expr_list:
+    expression{$$ = $1;}
+    | add_expr_list expression{$$=$1+$2;}
+;
+
+mul_expr_list:
+    expression{$$ = $1;}
+    | mul_expr_list expression{$$ = $1 * $2;}
+;
+
+and_expr_list:
+    expression{$$ = $1;}
+    | and_expr_list expression{$$ = $1&&$2;}
+;
+
+or_expr_list:
+    expression{$$ = $1;}
+    | or_expr_list expression{$$=$1 || $2;}
+;
+
+max_expr_list:
+    expression{$$ = $1;}
+    | max_expr_list expression{$$ = ($1 > $2) ? $1 : $2;}
+;
+
+min_expr_list:
+    expression{$$ = $1;}
+    | min_expr_list expression{$$ = ($1 < $2) ? $1 : $2;}
+;
+
+eq_expr_list:
+    expression{$$ = $1;}
+    | eq_expr_list expression{$$ = ($1 == $2) ? 1 : 0;}
+;
+
+int_lit: 
+    INT_LIT {$$ = $1;}
+    ;
+
+bool_lit: 
+    BOOL_LIT {$$ = $1;}
+    ;
+
+cell_lit: 
+    CELL_LIT {$$ = $1;}
+    ;
+
+indetify_name: 
+    IDENTIFIER { $$ = $1; }
+    ;
+
+%%
+

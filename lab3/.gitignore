@@ -1,0 +1,6 @@
+build/
+test.txt
+lex/lex.yy.cc
+bison/bison.tab.cpp
+bison/bison.tab.hpp
+bison/stack.hh
