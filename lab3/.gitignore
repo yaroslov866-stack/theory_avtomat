@@ -4,3 +4,15 @@ lex/lex.yy.cc
 bison/bison.tab.cpp
 bison/bison.tab.hpp
 bison/stack.hh
+eq.txt
+ff.txt
+Map.txt
+maxmin.txt
+switch.txt
+t.txt
+vector.txt
+while.txt
+summuladd.txt
+notandeq.txt
+bnf/
+fib.txt
